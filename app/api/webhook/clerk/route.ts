@@ -2,8 +2,8 @@ import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { createUser, deleteUser, updateUser } from '@/lib/actions/user.actions'
-import { clerkClient } from '@clerk/clerk-sdk-node'
 import { NextResponse } from 'next/server'
+import { clerkClient } from '@clerk/nextjs/server'
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.SIGNING_SECRET
@@ -49,11 +49,13 @@ export async function POST(req: Request) {
   }
 
   // Do something with payload
-  // For this guide, log payload to console
   const { id } = evt.data
   const eventType = evt.type
   
-  if(eventType === 'user.created') {
+  // Get the Clerk client instance
+  const client = await clerkClient();
+
+  if (eventType === 'user.created') {
     const { id, email_addresses, image_url, first_name, last_name, username } = evt.data;
 
     const user = {
@@ -67,8 +69,8 @@ export async function POST(req: Request) {
 
     const newUser = await createUser(user);
 
-    if(newUser) {
-      await clerkClient.users.updateUserMetadata(id, {
+    if (newUser) {
+      await client.users.updateUserMetadata(id, {
         publicMetadata: {
           userId: newUser._id
         }
@@ -79,7 +81,7 @@ export async function POST(req: Request) {
   }
 
   if (eventType === 'user.updated') {
-    const {id, image_url, first_name, last_name, username } = evt.data
+    const { id, image_url, first_name, last_name, username } = evt.data
 
     const user = {
       firstName: first_name,
@@ -103,4 +105,3 @@ export async function POST(req: Request) {
 
   return new Response('', { status: 200 })
 }
- 
